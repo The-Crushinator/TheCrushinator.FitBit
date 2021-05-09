@@ -5,4 +5,8 @@
     <UserSecretsId>b4f80fd5-e59c-4a14-8a96-8c2d345d6baf</UserSecretsId>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\Fitbit.NET\Fitbit.Portable\Fitbit.Portable.csproj" />
+  </ItemGroup>
+
 </Project>

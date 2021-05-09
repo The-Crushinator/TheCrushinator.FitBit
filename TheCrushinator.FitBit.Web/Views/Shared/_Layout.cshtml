@@ -1,4 +1,12 @@
-﻿<!DOCTYPE html>
+﻿@using Fitbit.Models
+@using TheCrushinator.FitBit.Web.Constants
+@using TheCrushinator.FitBit.Web.Extensions
+
+@{
+    var userProfile = Context.Session.Get<UserProfile>(SessionKeys.SessionKeyFitbitProfile);
+}
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -22,7 +30,7 @@
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                            <a class="nav-link text-dark" asp-area="" asp-controller="FitBit" asp-action="PushBeurerData">Push Weight and Fat</a>
                         </li>
                     </ul>
                 </div>
@@ -38,6 +46,10 @@
     <footer class="border-top footer text-muted">
         <div class="container">
             &copy; 2021 - TheCrushinator.FitBit.Web - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            @if (userProfile != null)
+            {
+                <span>FitBit: @userProfile.DisplayName</span>
+            }
         </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
