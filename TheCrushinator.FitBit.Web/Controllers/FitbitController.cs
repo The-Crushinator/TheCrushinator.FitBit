@@ -4,6 +4,7 @@ using Fitbit.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Threading.Tasks;
@@ -15,14 +16,17 @@ namespace TheCrushinator.FitBit.Web.Controllers
 {
     public class FitbitController : Controller
     {
+        private readonly ILogger<FitbitController> _logger;
         private readonly FitbitClientOptions _fitbitClientOptions;
 
         /// <summary>
         /// Ctor
         /// </summary>
+        /// <param name="logger"></param>
         /// <param name="fitbitClientOptions">Client Options for FitBit</param>
-        public FitbitController(IOptions<FitbitClientOptions> fitbitClientOptions)
+        public FitbitController(ILogger<FitbitController> logger, IOptions<FitbitClientOptions> fitbitClientOptions)
         {
+            _logger = logger;
             _fitbitClientOptions = fitbitClientOptions.Value;
         }
 

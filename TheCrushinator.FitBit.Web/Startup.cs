@@ -1,10 +1,14 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
+using TheCrushinator.FitBit.Web.Models;
 using TheCrushinator.FitBit.Web.Models.Options;
+using TheCrushinator.FitBit.Web.Services;
+using TheCrushinator.FitBit.Web.Services.Interfaces;
 
 namespace TheCrushinator.FitBit.Web
 {
@@ -22,6 +26,11 @@ namespace TheCrushinator.FitBit.Web
         {
             LoadOptions(services);
 
+            services.AddDbContext<FitbitContext>(options =>
+                options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+
+            services.AddDatabaseDeveloperPageExceptionFilter();
+
             services.AddDistributedMemoryCache();
 
             services.AddSession(options =>
@@ -30,6 +39,10 @@ namespace TheCrushinator.FitBit.Web
                 options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
             });
+
+            ConfigureAutoMapper(services);
+
+            services.AddScoped<IBeurerService, BeurerService>();
 
             services.AddControllersWithViews();
         }
@@ -64,11 +77,25 @@ namespace TheCrushinator.FitBit.Web
             });
         }
 
+        /// <summary>
+        /// Loads assorted options sections from Configuration
+        /// </summary>
+        /// <param name="services"></param>
         private void LoadOptions(IServiceCollection services)
         {
             services.Configure<FitbitClientOptions>(
                 Configuration.GetSection("Fitbit")
             );
+        }
+
+        /// <summary>
+        /// Configures AutoMapper
+        /// </summary>
+        /// <param name="services"></param>
+        protected virtual void ConfigureAutoMapper(IServiceCollection services)
+        {
+            // Scan the current assembly for mappings
+            services.AddAutoMapper(GetType().Assembly);
         }
     }
 }
