@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace TheCrushinator.FitBit.Web.Models
 {
-    public class ScaleEntry: IEquatable<ScaleEntry>
+    public class ScaleEntry
     {
         [Key]
         public string EntryId { get; set; }
@@ -31,10 +31,5 @@ namespace TheCrushinator.FitBit.Web.Models
         public int AMRKCal { get; set; }
 
         public DateTime FitBitUploadDateTimeUtc { get; set; }
-
-        public bool Equals(ScaleEntry other)
-        {
-            return EntryId.Equals(other);
-        }
     }
 }

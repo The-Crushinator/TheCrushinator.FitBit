@@ -1,1 +1,30 @@
-﻿
+﻿@{
+    ViewData["Title"] = "Beurer Data Import";
+}
+
+@if (ViewBag.Entries != null && (ViewBag.Entries as IEnumerable<ScaleEntry>).Any())
+{
+    <table class="table">
+        <thead>
+        <tr>
+            <th scope="col">#</th>
+            <th scope="col">Recorded</th>
+            <th scope="col">Weight (kg)</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var entry in ViewBag.Entries as IEnumerable<ScaleEntry>)
+        {
+            <tr>
+                <th scope="row">@entry.EntryId</th>
+                <td>@entry.RecordDateTimeUtc</td>
+                <td>@entry.WeightKg</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+else
+{
+    <span>No new entries to add.</span>
+}

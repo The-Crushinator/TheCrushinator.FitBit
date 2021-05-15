@@ -1,6 +1,6 @@
-﻿using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System.Threading.Tasks;
 using TheCrushinator.FitBit.Web.Services.Interfaces;
 
 namespace TheCrushinator.FitBit.Web.Controllers
@@ -23,7 +23,9 @@ namespace TheCrushinator.FitBit.Web.Controllers
 
         public async Task<IActionResult> ReadData()
         {
-            await _beurerService.ImportWeightFromJson();
+            var newEntries = await _beurerService.ReadScaleDataInToDatabase();
+
+            ViewBag.Entries = newEntries;
 
             return View();
         }
