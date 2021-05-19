@@ -78,6 +78,104 @@ namespace TheCrushinator.FitBit.Web.Controllers
             return RedirectToAction("Index", "Home");
         }
 
+
+        public async Task<IActionResult> GetFriendRequests()
+        {
+            try
+            {
+                var fitbitClient = GetFitbitClient();
+
+                if (fitbitClient == null)
+                {
+                    throw new Exception("Fitbit client not found and expected exception not thrown.");
+                }
+
+                var invitations = await fitbitClient.GetFriendInvitationsAsync();
+                return Ok(invitations);
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning("First time requesting a FitbitClient from the session you must pass the AccessToken.");
+                return BadRequest($"You need to create a session with {Request.Scheme}://{Request.Host}/Fitbit/{nameof(Authorize)} first!");
+            }
+        }
+
+        public async Task<IActionResult> AcceptFriendRequest(string fromUserId)
+        {
+            try
+            {
+                var fitbitClient = GetFitbitClient();
+
+                if (fitbitClient == null)
+                {
+                    throw new Exception("Fitbit client not found and expected exception not thrown.");
+                }
+
+                fromUserId = fromUserId.Trim();
+                if (string.IsNullOrWhiteSpace(fromUserId))
+                {
+                    throw new ArgumentException("Friend Id must be specified");
+                }
+
+                var inviteResponse = await fitbitClient.RespondToFriendInvitationAsync(fromUserId);
+                return Ok(inviteResponse);
+            }
+            catch (ArgumentException e)
+            {
+                _logger.LogWarning("FriendId wasn't specified");
+                return BadRequest(
+                    $"You need to enter a friend ID like this: {Request.Scheme}://{Request.Host}/Fitbit/{nameof(AcceptFriendRequest)}?{nameof(fromUserId)}=ABCDEF ");
+            }
+            catch (FitbitException e)
+            {
+                _logger.LogWarning("Something went wrong accepting the friend");
+                return UnprocessableEntity(e.ApiErrors);
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning("First time requesting a FitbitClient from the session you must pass the AccessToken.");
+                return BadRequest($"You need to create a session with {Request.Scheme}://{Request.Host}/Fitbit/{nameof(Authorize)} first!");
+            }
+        }
+
+        public async Task<IActionResult> SendFriendRequest(string toUserId)
+        {
+            try
+            {
+                var fitbitClient = GetFitbitClient();
+
+                if (fitbitClient == null)
+                {
+                    throw new Exception("Fitbit client not found and expected exception not thrown.");
+                }
+
+                toUserId = toUserId.Trim();
+                if (string.IsNullOrWhiteSpace(toUserId))
+                {
+                    throw new ArgumentException("Friend Id must be specified");
+                }
+
+                var inviteResponse = await fitbitClient.SendFriendInvitationAsync(toUserId);
+                return Ok(inviteResponse);
+            }
+            catch (ArgumentException e)
+            {
+                _logger.LogWarning("FriendId wasn't specified");
+                return BadRequest(
+                    $"You need to enter a friend ID like this: {Request.Scheme}://{Request.Host}/Fitbit/{nameof(SendFriendRequest)}?{nameof(toUserId)}=ABCDEF");
+            }
+            catch (FitbitException e)
+            {
+                _logger.LogWarning("Something went wrong sending to the friend");
+                return UnprocessableEntity(e.ApiErrors);
+            }
+            catch (Exception e)
+            {
+                _logger.LogWarning("First time requesting a FitbitClient from the session you must pass the AccessToken.");
+                return BadRequest($"You need to create a session with {Request.Scheme}://{Request.Host}/Fitbit/{nameof(Authorize)} first!");
+            }
+        }
+
         /// <summary>
         /// Get Fitbit client with existing or new access token.
         /// ----HttpClient and hence FitbitClient are designed to be long-lived for the duration of the session. This method ensures only one client is created for the duration of the session.

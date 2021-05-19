@@ -4,5 +4,29 @@
 
 <div class="text-center">
     <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+</div>
+<div>
+    <ol>
+        <li><a asp-controller="Fitbit" asp-action="Authorize">Auth</a></li>
+        <li><a asp-controller="Fitbit" asp-action="GetFriendRequests">Get friend requests</a> (remember the id, someting like: 84PKLX)</li>
+        <li>
+            <form asp-controller="Fitbit" asp-action="AcceptFriendRequest" method="get">
+                <label for="fromUserId">Friend Id</label>
+                <input type="text" id="fromUserId" name="fromUserId" placeholder="Enter friend id here!" />
+                <input type="submit" value="Accept friend request" />
+            </form>
+        </li>
+    </ol>
+</div>
+<div>
+    Can also send a friend request...
+    <ul>
+        <li>
+            <form asp-controller="Fitbit" asp-action="SendFriendRequest" method="get">
+                <label for="toUserId">Friend Id</label>
+                <input type="text" id="toUserId" name="toUserId" placeholder="Enter friend id here!"/>
+                <input type="submit" value="Send friend request"/>
+            </form>
+        </li>
+    </ul>
 </div>
