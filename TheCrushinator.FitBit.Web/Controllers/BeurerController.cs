@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System.Threading;
 using System.Threading.Tasks;
 using TheCrushinator.FitBit.Web.Services.Interfaces;
 
@@ -21,13 +22,31 @@ namespace TheCrushinator.FitBit.Web.Controllers
             _beurerService = beurerService;
         }
 
-        public async Task<IActionResult> ReadData()
+        public async Task<IActionResult> FetchData(CancellationToken cancellationToken)
         {
-            var newEntries = await _beurerService.ReadScaleDataInToDatabase();
+            var newEntries = await _beurerService.FetchScaleDataFromBeurerInToDatabase(cancellationToken);
 
             ViewBag.Entries = newEntries;
 
             return View();
+        }
+
+        public async Task<IActionResult> ReadData()
+        {
+            var newEntries = await _beurerService.ReadScaleDataFromFileInToDatabase();
+
+            ViewBag.Entries = newEntries;
+
+            return View();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public async Task<IActionResult> FetchNewDataFromBeurer()
+        {
+            return View("ReadData");
         }
     }
 }

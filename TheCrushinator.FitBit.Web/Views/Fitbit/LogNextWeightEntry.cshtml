@@ -1,0 +1,52 @@
+﻿@using Fitbit.Models
+@{
+    var weight = ViewBag.Weight as WeightLog;
+    var fat = ViewBag.Fat as FatLog;
+    var scaleEntry = ViewBag.ScaleEntry as ScaleEntry;
+}
+
+@if (weight != null)
+{
+    <table class="table">
+        <tbody>
+            <tr>
+                <th>LogId</th>
+                <td>@weight.LogId</td>
+            </tr>
+            <tr>
+                <th>Weight</th>
+                <td>@weight.Weight</td>
+            </tr>
+            <tr>
+                <th>BMI</th>
+                <td>@weight.Bmi</td>
+            </tr>
+        <tr>
+                <th>Date Time</th>
+                <td>@weight.DateTime</td>
+            </tr>
+        </tbody>
+    </table>
+}
+
+@if (fat != null)
+{
+    <table class="table">
+        <tbody>
+        <tr>
+            <th>LogId</th>
+            <td>@fat.LogId</td>
+        </tr>
+        <tr>
+            <th>Fat</th>
+            <td>@fat.Fat</td>
+        </tr>
+        <tr>
+            <th>Date Time</th>
+            <td>@fat.DateTime</td>
+        </tr>
+        </tbody>
+    </table>
+}
+
+<meta http-equiv="refresh" content="120">

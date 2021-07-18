@@ -1,10 +1,14 @@
 ﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
+using TheCrushinator.Beurer.Services.Interfaces;
 using TheCrushinator.FitBit.Web.Models;
 using TheCrushinator.FitBit.Web.Models.Comparers;
 using TheCrushinator.FitBit.Web.Services.Interfaces;
@@ -19,6 +23,8 @@ namespace TheCrushinator.FitBit.Web.Services
         private readonly ILogger<BeurerService> _logger;
         private readonly IMapper _mapper;
         private readonly FitbitContext _context;
+        private readonly IBeurerAuthService _beurerAuthService;
+        private readonly IBeurerWeightService _beurerWeightService;
         private const string DefaultFileNamePattern = "Export*.json";
 
         /// <summary>
@@ -27,18 +33,36 @@ namespace TheCrushinator.FitBit.Web.Services
         /// <param name="logger"></param>
         /// <param name="mapper"></param>
         /// <param name="context"></param>
-        public BeurerService(ILogger<BeurerService> logger, IMapper mapper, FitbitContext context)
+        public BeurerService(ILogger<BeurerService> logger, IMapper mapper, FitbitContext context, IBeurerAuthService beurerAuthService, IBeurerWeightService beurerWeightService)
         {
             _logger = logger;
             _mapper = mapper;
             _context = context;
+            _beurerAuthService = beurerAuthService;
+            _beurerWeightService = beurerWeightService;
+        }
+
+        public async Task<ScaleEntry> GetNextScaleEntry(bool isUnsynchronised = true)
+        {
+            var query = _context.BeurerWeightEntries.AsQueryable();
+
+            if (isUnsynchronised)
+            {
+                query = query.Where(x => x.FitBitWeightUploadDateTimeUtc == null
+                                         || x.FitbitWeightLogId == null
+                                         || x.FitBitFatUploadDateTimeUtc == null);
+            }
+
+            var result = await query.OrderBy(x => x.RecordDateTimeUtc).FirstOrDefaultAsync();
+
+            return result;
         }
 
         /// <summary>
         /// Read a directory for scale data and save it to the database.
         /// </summary>
         /// <returns>Newly added entries.</returns>
-        public async Task<IEnumerable<ScaleEntry>> ReadScaleDataInToDatabase()
+        public async Task<IEnumerable<ScaleEntry>> ReadScaleDataFromFileInToDatabase()
         {
             // Get file names
             var fileNames = FindMatchingFiles();
@@ -47,6 +71,39 @@ namespace TheCrushinator.FitBit.Web.Services
             var entries = await GetScaleEntriesWeightFromJsonFiles(fileNames);
 
             // Add _new_ entries to database
+            var newEntries = await AddScaleEntriesToDatabase(entries);
+
+            return newEntries;
+        }
+
+        /// <summary>
+        /// Fetch any updates to scale data from beurer
+        /// </summary>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public async Task<IEnumerable<ScaleEntry>> FetchScaleDataFromBeurerInToDatabase(CancellationToken cancellationToken)
+        {
+            // Get date to search from
+            var mostRecentDate = await _context.BeurerWeightEntries.MaxAsync(x => x.RecordDateTimeUtc, cancellationToken: cancellationToken);
+
+            if (mostRecentDate > DateTime.UtcNow.AddMinutes(-1))
+            {
+                return default;
+            }
+
+            // Get entries
+            var sessionInfo = await _beurerAuthService.LoginAsync("xxx", "xxx", cancellationToken);
+            var measurements = await _beurerWeightService.FetchScaleMeasurementResponsesForDateRange(
+                                   mostRecentDate.ToLocalTime(),
+                                   DateTime.Now,
+                                   sessionInfo,
+                                   cancellationToken
+                                   );
+
+            // Convert to scale entries
+            var entries = _mapper.Map<IEnumerable<ScaleEntry>>(measurements);
+
+            // Add new entries to database
             var newEntries = await AddScaleEntriesToDatabase(entries);
 
             return newEntries;

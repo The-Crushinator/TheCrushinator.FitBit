@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using System;
+using TheCrushinator.Beurer.DTOs;
 using TheCrushinator.FitBit.Web.Models;
 
 namespace TheCrushinator.FitBit.Web.Mapping
@@ -8,7 +9,7 @@ namespace TheCrushinator.FitBit.Web.Mapping
     {
         public BeurerProfile()
         {
-            CreateMap<Scale, ScaleEntry>()
+            CreateMap<BeurerScaleMeasurementResponse, ScaleEntry>()
                 .ForMember(d => d.EntryId, o => o.MapFrom(s => s.RecordIdentifier))
                 .ForMember(d => d.UserId, o => o.MapFrom(s => s.UserID3))
                 .ForMember(d => d.ImportDateTimeUtc, o => o.MapFrom(_ => DateTime.UtcNow))
@@ -24,12 +25,17 @@ namespace TheCrushinator.FitBit.Web.Mapping
                 .ForAllOtherMembers(o => o.Ignore());
         }
 
-        private DateTime FindMeasurementTimeUtc(Scale s)
+        private DateTime FindMeasurementTimeUtc(BeurerScaleMeasurementResponse s)
         {
-            var difference = s.CreatedDate.Subtract(s.GlobalTime);
-            var measurementDateTime = s.MeasurementTimeWithDate != DateTime.MinValue ? s.MeasurementTimeWithDate : s.MeasurementTime;
-            var shiftedDateTime = measurementDateTime.Subtract(difference);
-            return DateTime.SpecifyKind(shiftedDateTime, DateTimeKind.Utc);
+            //var difference = s.CreatedDate.Subtract(s.GlobalTime);
+            //var measurementDateTime = s.MeasurementTimeWithDate != DateTime.MinValue ? s.MeasurementTimeWithDate : s.MeasurementTime;
+            //var shiftedDateTime = measurementDateTime.Subtract(difference);
+
+            // Use MeasurementDateTime as many records seem to not align
+            // - Eg. "MeasurementTime": "2016-09-17T12:26:24", "GlobalTime": "2017-02-28T01:35:30+00:00"
+            // TODO: Allow for specification of TimeZone instead of relying on system time being AEST.
+            var measurementDateTime = DateTime.SpecifyKind(s.MeasurementTime, DateTimeKind.Local);
+            return measurementDateTime.ToUniversalTime();
         }
     }
 }

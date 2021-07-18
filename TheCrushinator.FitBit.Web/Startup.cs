@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
+using TheCrushinator.Beurer.Helpers;
 using TheCrushinator.FitBit.Web.Models;
 using TheCrushinator.FitBit.Web.Models.Options;
 using TheCrushinator.FitBit.Web.Services;
@@ -39,6 +40,8 @@ namespace TheCrushinator.FitBit.Web
                 options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
             });
+
+            services.AddBeurerClients();
 
             ConfigureAutoMapper(services);
 

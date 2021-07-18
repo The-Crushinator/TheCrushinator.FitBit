@@ -7,16 +7,21 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using TheCrushinator.FitBit.Web.Constants;
 using TheCrushinator.FitBit.Web.Extensions;
+using TheCrushinator.FitBit.Web.Models;
 using TheCrushinator.FitBit.Web.Models.Options;
+using TheCrushinator.FitBit.Web.Services.Interfaces;
 
 namespace TheCrushinator.FitBit.Web.Controllers
 {
     public class FitbitController : Controller
     {
         private readonly ILogger<FitbitController> _logger;
+        private readonly IBeurerService _beurerService;
+        private readonly FitbitContext _context;
         private readonly FitbitClientOptions _fitbitClientOptions;
 
         /// <summary>
@@ -24,15 +29,95 @@ namespace TheCrushinator.FitBit.Web.Controllers
         /// </summary>
         /// <param name="logger"></param>
         /// <param name="fitbitClientOptions">Client Options for FitBit</param>
-        public FitbitController(ILogger<FitbitController> logger, IOptions<FitbitClientOptions> fitbitClientOptions)
+        /// <param name="beurerService"></param>
+        /// <param name="context"></param>
+        public FitbitController(ILogger<FitbitController> logger, IOptions<FitbitClientOptions> fitbitClientOptions, IBeurerService beurerService, FitbitContext context)
         {
             _logger = logger;
+            _beurerService = beurerService;
+            _context = context;
             _fitbitClientOptions = fitbitClientOptions.Value;
         }
 
         public IActionResult PushBeurerData()
         {
             return RedirectToAction("Authorize");
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="code"></param>
+        /// <returns></returns>
+        public async Task<IActionResult> LogNextWeightEntry()
+        {
+            var nextWeight = await _beurerService.GetNextScaleEntry();
+
+            if (nextWeight != null)
+            {
+                var fitbitClient = GetFitbitClient();
+                var localRecordDateTime = nextWeight.RecordDateTimeUtc.ToLocalTime();
+
+                if (fitbitClient != null)
+                {
+                    _logger.LogInformation($"Beginning submission of {nextWeight.WeightKg} kg and {nextWeight.BodyFatPct} for {localRecordDateTime}...");
+                    var weightCheck = await fitbitClient.GetWeightAsync(localRecordDateTime);
+                    if (!weightCheck.Weights.Any(x => Math.Abs(x.Weight - nextWeight.WeightKg) < 0.01 && x.DateTime == localRecordDateTime))
+                    {
+                        var weight = await fitbitClient.LogWeightAsync(nextWeight.WeightKg, localRecordDateTime);
+                        nextWeight.FitBitWeightUploadDateTimeUtc = weight.DateTime;
+                        nextWeight.FitbitWeightLogId = weight.LogId;
+                        await _context.SaveChangesAsync();
+
+                        ViewBag.Weight = weight;
+                        _logger.LogInformation("Added weight information");
+                    }
+                    else
+                    {
+                        nextWeight.FitBitWeightUploadDateTimeUtc = weightCheck.Weights.First().DateTime;
+                        nextWeight.FitbitWeightLogId = weightCheck.Weights.First().LogId;
+                        await _context.SaveChangesAsync();
+                        _logger.LogWarning("Matching weight entry already exists, setting upload time for local version");
+                    }
+
+                    // Body fat (skipping entries that are 0)
+                    if (nextWeight.BodyFatPct != 0)
+                    {
+                        var fatCheck = await fitbitClient.GetFatAsync(localRecordDateTime);
+                        if (!fatCheck.FatLogs.Any(x => Math.Abs(x.Fat - nextWeight.BodyFatPct) < 0.01 && x.DateTime == localRecordDateTime))
+                        {
+                            var fat = await fitbitClient.LogFatAsync(nextWeight.BodyFatPct, localRecordDateTime);
+                            nextWeight.FitBitFatUploadDateTimeUtc = fat.DateTime;
+                            nextWeight.FitbitFatLogId = fat.LogId;
+                            await _context.SaveChangesAsync();
+
+                            ViewBag.Fat = fat;
+                            _logger.LogInformation("Added fat information");
+                        }
+                        else
+                        {
+                            nextWeight.FitBitFatUploadDateTimeUtc = fatCheck.FatLogs.First().DateTime;
+                            nextWeight.FitbitFatLogId = fatCheck.FatLogs.First().LogId;
+                            await _context.SaveChangesAsync();
+                            _logger.LogWarning("Matching fat entry already exists, setting upload time for local version");
+                        }
+                    }
+                    else
+                    {
+                        nextWeight.FitBitFatUploadDateTimeUtc = DateTime.UtcNow;
+                        await _context.SaveChangesAsync();
+                        _logger.LogWarning("No fat entry defined, adding datetime and skipping");
+                    }
+
+                    ViewBag.ScaleEntry = nextWeight;
+                }
+                else
+                {
+                    throw new Exception("First time requesting a FitbitClient from the session you must pass the AccessToken.");
+                }
+            }
+
+            return View();
         }
 
         /// <summary>

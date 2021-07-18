@@ -30,6 +30,12 @@ namespace TheCrushinator.FitBit.Web.Models
 
         public int AMRKCal { get; set; }
 
-        public DateTime FitBitUploadDateTimeUtc { get; set; }
+        public DateTime? FitBitWeightUploadDateTimeUtc { get; set; }
+
+        public long? FitbitWeightLogId { get; set; }
+
+        public DateTime? FitBitFatUploadDateTimeUtc { get; set; }
+
+        public long? FitbitFatLogId { get; set; }
     }
 }
